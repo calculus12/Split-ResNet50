@@ -73,9 +73,10 @@ def predict():
         data = buffer.getvalue()
 
         # Get Container B address from environment variable
-        container_b_address = os.environ.get('CONTAINER_B_ADDRESS', 'http://localhost:5001/complete')
+        container_b_host = os.environ.get('CONTAINER_B_HOST', 'localhost')
+        container_b_port = os.environ.get('CONTAINER_B_PORT', '5001')
         # Send data to Container B
-        response = requests.post(container_b_address, data=data)
+        response = requests.post(f"http://{container_b_host}:{container_b_port}/complete", data=data)
 
         if response.status_code == 200:
             result = response.json()

@@ -8,7 +8,8 @@ class ModelA(nn.Module):
     def __init__(self, original_model=None):
         super(ModelA, self).__init__()
         if original_model is None:
-            original_model = resnet50(pretrained=True)
+            original_model = resnet50(pretrained=False)
+            original_model.load_state_dict(torch.load('./resnet50-pretrained.pth'))
         self.features = nn.Sequential(
             original_model.conv1,
             original_model.bn1,
@@ -27,7 +28,8 @@ class ModelB(nn.Module):
     def __init__(self, original_model=None):
         super(ModelB, self).__init__()
         if original_model is None:
-            original_model = resnet50(pretrained=True)
+            original_model = resnet50(pretrained=False)
+            original_model.load_state_dict(torch.load('./resnet50-pretrained.pth'))
         self.features = nn.Sequential(
             original_model.layer4,
             original_model.avgpool

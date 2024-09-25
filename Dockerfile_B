@@ -1,23 +1,26 @@
 # Dockerfile_B
 
-FROM python:3.8-slim
+FROM python:3.8
 
 WORKDIR /app
 
 # Install dependencies
+COPY imagenet_classes.txt .
+COPY resnet50-pretrained.pth .
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY server_b.py .
+# Copy model structure code
 COPY model_definitions1.py .
 COPY model_definitions2.py .
 COPY model_definitions3.py .
-COPY imagenet_classes.txt .
 
 # Create models directory and copy model files
 RUN mkdir models
 COPY models/ models/
+
+# Copy application code
+COPY server_b.py .
 
 # Expose port
 EXPOSE 5001
