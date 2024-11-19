@@ -36,13 +36,13 @@ def complete():
     try:
         
         json = request.get_json()
+        
+        i_start_time = time.time()
         data = json.get('data')
         data = base64.b64decode(data)
         buffer = io.BytesIO(data)
-        activation_maps = torch.load(buffer)
 
-        
-        i_start_time = time.time()
+        activation_maps = torch.load(buffer)
         with torch.no_grad():
             outputs = model_b(activation_maps)
             _, predicted = outputs.max(1)
@@ -51,11 +51,10 @@ def complete():
         end_time = time.time()
         inference_time_b = end_time - i_start_time
         start_time = json.get('start_time')
-        inference_time_a = json.get('inference_time_a')
         total_time = end_time - start_time
 
         return jsonify({'class_id': class_id, 'class_name': class_name, 
-                        'total_time': total_time, 'inference_time_a': inference_time_a, 'inference_time_b': inference_time_b})
+                        'total_time': total_time, 'inference_time_b': inference_time_b})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

@@ -35,12 +35,13 @@ with open('imagenet_classes.txt') as f:
 def complete():
     try:
         json = request.get_json()
+    
+        i_start_time = time.time()
         data = json.get('data')
         data = base64.b64decode(data)
         buffer = io.BytesIO(data)
-        activation_maps = torch.load(buffer)
 
-        i_start_time = time.time()
+        activation_maps = torch.load(buffer)
         with torch.no_grad():
             outputs = model_b(activation_maps)
             _, predicted = outputs.max(1)

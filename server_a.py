@@ -72,7 +72,7 @@ def predict():
         container_b_port = os.environ.get('CONTAINER_B_PORT', '5001')
         # Send data to Container B
         response = requests.post(f"http://{container_b_host}:{container_b_port}/complete", 
-                                json={'data': base64.b64encode(data).decode('utf-8'), 'start_time': start_time, 'inference_time_a': inference_time_a})
+                                json={'data': base64.b64encode(data).decode('utf-8'), 'start_time': start_time})
 
         if response.status_code == 200:
             result = response.json()
