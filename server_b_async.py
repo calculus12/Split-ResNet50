@@ -34,14 +34,12 @@ with open('imagenet_classes.txt') as f:
 @app.route('/complete', methods=['POST'])
 def complete():
     try:
-        
         json = request.get_json()
         data = json.get('data')
         data = base64.b64decode(data)
         buffer = io.BytesIO(data)
         activation_maps = torch.load(buffer)
 
-        
         i_start_time = time.time()
         with torch.no_grad():
             outputs = model_b(activation_maps)
@@ -49,13 +47,11 @@ def complete():
             class_id = predicted.item()
             class_name = idx_to_labels[class_id]
         end_time = time.time()
-        inference_time_b = end_time - i_start_time
         start_time = json.get('start_time')
-        inference_time_a = json.get('inference_time_a')
+        inference_time_b = end_time - i_start_time
         total_time = end_time - start_time
 
-        return jsonify({'class_id': class_id, 'class_name': class_name, 
-                        'total_time': total_time, 'inference_time_a': inference_time_a, 'inference_time_b': inference_time_b})
+        return jsonify({'class_id': class_id, 'class_name': class_name, 'total_time': total_time, 'inference_time_b': inference_time_b})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
