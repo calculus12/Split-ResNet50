@@ -15,6 +15,7 @@ app = Flask(__name__)
 # Read environment variables
 MODEL_VERSION = os.environ.get('MODEL_VERSION', '1')  # Defaults to '1' if not set
 
+
 # Dynamically import the model definitions module
 model_definitions_module = f"model_definitions{MODEL_VERSION}"
 spec = importlib.util.spec_from_file_location("model_definitions", f"{model_definitions_module}.py")

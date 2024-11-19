@@ -12,12 +12,13 @@ import importlib.util
 import time
 import threading
 import queue
-import csv
+import json
+import fcntl
 import base64
 
 # job queue
 transmission_queue = queue.Queue()
-result_queue = queue.Queue(maxsize=50)
+# result_queue = queue.Queue(maxsize=50)
 
 
 # Initialize Flask app
@@ -40,9 +41,71 @@ model_a.eval()
 # 컨테이너 정보
 CONTAINER_B_HOST = os.environ.get('CONTAINER_B_HOST', 'localhost')
 CONTAINER_B_PORT = os.environ.get('CONTAINER_B_PORT', '5001')
+SHARED_FILE_PATH = os.environ.get('RESULT_FILE_PATH', '/shared/data_queue.json')
+
+def add_data_to_file(data):
+    # 파일이 없으면 생성하고 빈 리스트를 저장
+    if not os.path.exists(SHARED_FILE_PATH):
+        with open(SHARED_FILE_PATH, 'w') as f:
+            json.dump([], f)
+
+    # 파일 열기 및 잠금
+    with open(SHARED_FILE_PATH, 'r+') as f:
+        # 파일 잠금 설정 (쓰기 잠금)
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            # 기존 데이터 로드
+            try:
+                f.seek(0)
+                data_list = json.load(f)
+            except json.JSONDecodeError:
+                data_list = []
+
+            # 새로운 데이터 추가
+            data_list.append(data)
+
+            # 파일 내용 업데이트
+            f.seek(0)
+            f.truncate()
+            json.dump(data_list, f)
+        finally:
+            # 파일 잠금 해제
+            fcntl.flock(f, fcntl.LOCK_UN)
+
+def get_data_from_file():
+    # 파일이 없으면 데이터가 없는 것임
+    if not os.path.exists(SHARED_FILE_PATH):
+        return None
+
+    # 파일 열기 및 잠금
+    with open(SHARED_FILE_PATH, 'r+') as f:
+        # 파일 잠금 설정 (쓰기 잠금)
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            # 데이터 로드
+            try:
+                f.seek(0)
+                data_list = json.load(f)
+            except json.JSONDecodeError:
+                data_list = []
+
+            if data_list:
+                # 첫 번째 데이터 가져오기
+                data = data_list.pop(0)
+
+                # 파일 내용 업데이트
+                f.seek(0)
+                f.truncate()
+                json.dump(data_list, f)
+
+                return data
+            else:
+                return None
+        finally:
+            # 파일 잠금 해제
+            fcntl.flock(f, fcntl.LOCK_UN)
 
 
-csv_file = 'results.csv'
 def transmission_thread_func():
     while True:
         data, start_time, inference_time_a = transmission_queue.get()
@@ -55,7 +118,7 @@ def transmission_thread_func():
             response = requests.post(f"http://{CONTAINER_B_HOST}:{CONTAINER_B_PORT}/complete", json=json_data)
             response_data = response.json()
             response_data['inference_time_a'] = inference_time_a
-            result_queue.put(response_data)
+            add_data_to_file(response_data)
             
         except Exception as e:
             response_data = {'error': str(e)}
@@ -110,9 +173,10 @@ def predict():
     
 @app.route('/poll', methods=['GET'])
 def poll_data():
-    if not result_queue.empty():
+
         # 큐에서 데이터를 꺼냄
-        data = result_queue.get()
+    data = get_data_from_file()
+    if data:
         return jsonify(data), 200
     else:
         return jsonify({'message': 'No data available'}), 200
