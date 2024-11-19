@@ -52,7 +52,7 @@ def transform_image(image_bytes):
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        start_time = time.time()
+        
         if 'file' not in request.files:
             return jsonify({'error': 'No image provided'}), 400
         file = request.files['file']
@@ -60,6 +60,7 @@ def predict():
         input_tensor = transform_image(img_bytes)
 
         
+        start_time = time.time()
         # Get activation maps from Model A
         with torch.no_grad():
             activation_maps = model_a(input_tensor)

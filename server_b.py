@@ -43,12 +43,13 @@ def complete():
         # data = request.data
         # activation_maps = pickle.loads(data)
         # activation_maps = torch.tensor(activation_maps)
-        start_time = time.time()
+        
         data = request.data
         buffer = io.BytesIO(data)
         activation_maps = torch.load(buffer)
 
         
+        start_time = time.time()
         with torch.no_grad():
             outputs = model_b(activation_maps)
             _, predicted = outputs.max(1)
