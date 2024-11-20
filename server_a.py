@@ -46,6 +46,10 @@ def transform_image(image_bytes):
     image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
     return transform(image).unsqueeze(0)  # Add batch dimension
 
+
+# Get Container B address from environment variable
+CONTAINER_B_HOST = os.environ.get('CONTAINER_B_HOST', 'localhost')
+CONTAINER_B_PORT = os.environ.get('CONTAINER_B_PORT', '5001')
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
@@ -67,11 +71,9 @@ def predict():
         torch.save(activation_maps.cpu(), buffer)
         data = buffer.getvalue()
 
-        # Get Container B address from environment variable
-        container_b_host = os.environ.get('CONTAINER_B_HOST', 'localhost')
-        container_b_port = os.environ.get('CONTAINER_B_PORT', '5001')
+        
         # Send data to Container B
-        response = requests.post(f"http://{container_b_host}:{container_b_port}/complete", 
+        response = requests.post(f"http://{CONTAINER_B_HOST}:{CONTAINER_B_PORT}/complete", 
                                 json={'data': base64.b64encode(data).decode('utf-8'), 'start_time': start_time})
 
         if response.status_code == 200:
@@ -82,6 +84,43 @@ def predict():
             return jsonify({'error': 'Failed to get response from Container B'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+
+PROXY_HOST = os.environ('PROXY_HOST', 'localhost')
+PROXY_PORT = os.environ('PROXY_PORT', '6000')
+@app.route('/predict-proxy', methods=['POST'])
+def predict():
+    try:
+        
+        if 'file' not in request.files:
+            return jsonify({'error': 'No image provided'}), 400
+        file = request.files['file']
+        img_bytes = file.read()
+        
+        start_time = time.time()
+        input_tensor = transform_image(img_bytes)
+        # Get activation maps from Model A
+        with torch.no_grad():
+            activation_maps = model_a(input_tensor)
+        inference_time_a = time.time() - start_time
+
+        # Serialize activation maps
+        buffer = io.BytesIO()
+        torch.save(activation_maps.cpu(), buffer)
+        data = buffer.getvalue()
+
+        # Send data to Container B
+        response = requests.post(f"http://{PROXY_HOST}:{PROXY_PORT}/complete", 
+                                json={'data': base64.b64encode(data).decode('utf-8'), 'start_time': start_time})
+
+        if response.status_code == 200:
+            result = response.json()
+            return jsonify(result)
+        else:
+            return jsonify({'error': 'Failed to get response from Proxy'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
