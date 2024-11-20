@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  local_container_a:
+    image: local_container_a
+    container_name: local_container_a
+    environment:
+      MODEL_VERSION: "2"
+      CONTAINER_B_HOST: "local_container_b"
+      PROXY_HOST: "local_proxy"
+    networks:
+      - nat
+    ports:
+      - "5000:5000"
+  local_container_b:
+    image: local_container_b
+    container_name: local_container_b
+    environment:
+      MODEL_VERSION: "2"
+    networks:
+      - nat
+    ports:
+      - "5001:5001"
+  local_proxy:
+    image: local_proxy
+    container_name: local_proxy
+    environment:
+      CONTAINER_B_HOST: "local_container_b"
+    networks:
+      - nat
+    ports:
+      - "6000:6000"
+
+networks:
+  nat:
+    external: true

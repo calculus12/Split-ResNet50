@@ -7,7 +7,7 @@ import os
 import time
 
 app = Flask(__name__)
-socketio = SocketIO(app, async_mode='eventlet')
+socketio = SocketIO(app)
 
 # 전송 스레드 수를 저장하는 변수
 transfer_thread_count = 1  # 기본값은 1
@@ -29,8 +29,8 @@ transfer_thread_running = threading.Event()
 transfer_thread_running.set()
 
 
-CONTAINER_B_HOST = os.environ('CONTAINER_B_HOST', 'localhost')
-CONTAINER_B_PORT = os.environ('CONTAINER_B_PORT', '5001')
+CONTAINER_B_HOST = os.environ.get('CONTAINER_B_HOST', 'localhost')
+CONTAINER_B_PORT = os.environ.get('CONTAINER_B_PORT', '5001')
 
 # 스레드 종료를 위한 Sentinel Value 정의
 SENTINEL = object()
@@ -38,16 +38,20 @@ SENTINEL = object()
 def transfer_worker():
     while True:
         data = transfer_queue.get()
+        
         if data is SENTINEL:
+            # print('sentinel!')
             # 스레드 종료
             transfer_queue.task_done()
             break
         try:
+            # print('get data!')
             # 서버 B로 데이터 전송
             response = requests.post(f"http://{CONTAINER_B_HOST}:{CONTAINER_B_PORT}/complete", 
                             json=data)
             response_data = response.json()
             # 응답 큐에 데이터 저장
+            response_data['inference_time_a'] = data.get('inference_time_a')
             response_queue.put(response_data)
             if response_queue.qsize() >= queue_threshold:
                 # 클라이언트로 이벤트 전송
@@ -65,17 +69,20 @@ def start_transfer_threads():
     stop_transfer_threads()  # 기존 스레드 중지
     transfer_threads = []
     for _ in range(transfer_thread_count):
-        t = threading.Thread(target=transfer_worker)
+        t = threading.Thread(target=transfer_worker, daemon=True)
         t.start()
         transfer_threads.append(t)
 
 # 전송 스레드 중지 함수
 def stop_transfer_threads():
     global transfer_threads
+    i = 0
     # 각 스레드 수만큼 Sentinel Value를 큐에 넣어서 스레드 종료 신호 전송
     for _ in transfer_threads:
+        i += 1
         transfer_queue.put(SENTINEL)
     # 모든 스레드가 종료될 때까지 기다림
+    # print (i, 'SENTINEL added')
     for t in transfer_threads:
         t.join()
     transfer_threads = []
@@ -149,10 +156,11 @@ def response_count():
     count = response_queue.qsize()
     return jsonify({'count': count}), 200
 
-# 애플리케이션 종료 시 전송 스레드 정리
-@app.teardown_appcontext
-def shutdown_threads(exception=None):
-    stop_transfer_threads()
+# 요청 데이터 큐의 데이터 개수 반환 엔드포인트
+@app.route('/request_count', methods=['GET'])
+def request_count():
+    count = transfer_queue.qsize()
+    return jsonify({'count': count}), 200
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=6000)
+    socketio.run(app, host='0.0.0.0', port=6000, allow_unsafe_werkzeug=True)

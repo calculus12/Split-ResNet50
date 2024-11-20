@@ -86,10 +86,10 @@ def predict():
         return jsonify({'error': str(e)}), 500
     
 
-PROXY_HOST = os.environ('PROXY_HOST', 'localhost')
-PROXY_PORT = os.environ('PROXY_PORT', '6000')
+PROXY_HOST = os.environ.get('PROXY_HOST', 'localhost')
+PROXY_PORT = os.environ.get('PROXY_PORT', '6000')
 @app.route('/predict-proxy', methods=['POST'])
-def predict():
+def predict_proxy():
     try:
         
         if 'file' not in request.files:
@@ -111,7 +111,7 @@ def predict():
 
         # Send data to Container B
         response = requests.post(f"http://{PROXY_HOST}:{PROXY_PORT}/complete", 
-                                json={'data': base64.b64encode(data).decode('utf-8'), 'start_time': start_time})
+                                json={'data': base64.b64encode(data).decode('utf-8'), 'start_time': start_time, 'inference_time_a': inference_time_a})
 
         if response.status_code == 200:
             result = response.json()
