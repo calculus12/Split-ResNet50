@@ -145,7 +145,7 @@ def set_queue_threshold():
             raise ValueError
     except ValueError:
         return jsonify({'error': 'Invalid thread_count value'}), 400
-    
+    global queue_threshold
     queue_threshold = threshold
     return jsonify({'message': f'Queue threshold count set to {queue_threshold}'}), 200
 
