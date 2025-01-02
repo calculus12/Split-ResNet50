@@ -3,9 +3,11 @@
 2. 분산된 노드 사이에서의 트래픽에 따라 파드 개수를 조절함으로써 (horizontal scailing) 노드의 리소스를 효율적으로 활용
 
 중간에 트래픽이 증가하면 네트워크의 병목으로 인해 파드의 개수를 늘려 추론 처리량을 늘려도 효용이 없다 -> 따라서 파드의 개수를 감소시킨다.
+
 <img width="643" alt="trafficup" src="https://github.com/user-attachments/assets/49c27217-7c70-4262-9424-64467be09274" />
 
 중간에 트래픽이 감소하면 네트워크의 병목이 줄어들어 파드의 개수를 늘려 추론 처리량을 알맞게 증가시킨다. -> 따라서 파드의 개수를 증가시킨다.
+
 <img width="643" alt="trafficdown" src="https://github.com/user-attachments/assets/2921fc71-e470-4a4c-ba0c-df350bd69317" />
 
 이러한 스케일링을 결정해줄 오토 스케일링 모델 만들기
