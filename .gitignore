@@ -1,6 +1,7 @@
 .venv
 __pycache__
 *.sh
+!collect_data.sh
 /models
 *.pth
 /test
