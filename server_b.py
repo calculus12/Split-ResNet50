@@ -21,10 +21,14 @@ spec = importlib.util.spec_from_file_location("model_definitions", f"{model_defi
 model_definitions = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(model_definitions)
 
+GPU_TYPE = os.environ.get('GPU_TYPE', '')
 # Load Model B
 model_b = model_definitions.ModelB()
 model_b_path = os.path.join('models', f"model_b{MODEL_VERSION}.pth")
-model_b.load_state_dict(torch.load(model_b_path, map_location=torch.device('cpu')))
+if bool(GPU_TYPE):
+    model_b.load_state_dict(torch.load(model_b_path, map_location=torch.device(GPU_TYPE)))
+else:
+    model_b.load_state_dict(torch.load(model_b_path, map_location=torch.device('cpu')))
 model_b.eval()
 
 # Load class labels

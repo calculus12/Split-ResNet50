@@ -31,6 +31,7 @@ transfer_thread_running.set()
 
 CONTAINER_B_HOST = os.environ.get('CONTAINER_B_HOST', 'localhost')
 CONTAINER_B_PORT = os.environ.get('CONTAINER_B_PORT', '5001')
+SLEEP_TIME = os.environ.get('SLEEP_TIME', '')
 
 # 스레드 종료를 위한 Sentinel Value 정의
 SENTINEL = object()
@@ -47,6 +48,8 @@ def transfer_worker():
         try:
             # print('get data!')
             # 서버 B로 데이터 전송
+            if bool(SLEEP_TIME):
+                time.sleep(float(SLEEP_TIME))
             response = requests.post(f"http://{CONTAINER_B_HOST}:{CONTAINER_B_PORT}/complete", 
                             json=data)
             response_data = response.json()

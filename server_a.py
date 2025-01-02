@@ -26,10 +26,15 @@ spec = importlib.util.spec_from_file_location("model_definitions", f"{model_defi
 model_definitions = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(model_definitions)
 
+
+GPU_TYPE = os.environ.get('GPU_TYPE', '')
 # Load Model A
 model_a = model_definitions.ModelA()
 model_a_path = os.path.join('models', f"model_a{MODEL_VERSION}.pth")
-model_a.load_state_dict(torch.load(model_a_path, map_location=torch.device('cpu')))
+if bool(GPU_TYPE):
+    model_a.load_state_dict(torch.load(model_a_path, map_location=torch.device(GPU_TYPE)))    
+else:
+    model_a.load_state_dict(torch.load(model_a_path, map_location=torch.device('cpu')))
 model_a.eval()
 
 # Define image preprocessing
@@ -45,7 +50,6 @@ def transform_image(image_bytes):
     ])
     image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
     return transform(image).unsqueeze(0)  # Add batch dimension
-
 
 # Get Container B address from environment variable
 CONTAINER_B_HOST = os.environ.get('CONTAINER_B_HOST', 'localhost')
